@@ -1,5 +1,7 @@
 mod cli;
+mod types;
 
+use types::{Span, DocId, InvertedIndex};
 use structopt::StructOpt;
 use std::sync::{Arc, RwLock};
 use std::collections::{HashSet, HashMap};
@@ -7,6 +9,7 @@ use std::collections::{HashSet, HashMap};
 use serde_json::Value;
 use soup::prelude::*;
 use crate::cli::Opt;
+
 
 async fn get_json(url: &str) -> reqwest::Result<Value> {
     reqwest::get(url)
@@ -25,13 +28,13 @@ async fn get_html(url: &str) -> reqwest::Result<String> {
         .await
 }
 
-async fn text_to_set(text: String) -> HashSet<String> {
+async fn text_to_set(text: String) -> HashSet<(DocId, Span)> {
     tokio::task::spawn_blocking(move || {
         let words = text.split(&[' ', '"', ':', ',', '\\', '\n', '.']);
         let mut hm = std::collections::HashSet::new();
 
-        for word in words {
-            hm.insert(word.into());
+        for (i, word) in words.enumerate() {
+            hm.insert((word.into(), (i as u64, i as u64)));
         }
         hm
     }).await.expect("tokio join error")
@@ -51,7 +54,8 @@ async fn bfs_crawl(root_domain: &str, limit: u64) {
     let start_url = format!("http://www.{root_domain}");
     let mut visited: HashSet<String> = HashSet::new();
     let queue = Arc::new(RwLock::new(vec![start_url]));
-    let index: Arc<RwLock<HashMap<String, HashSet<String>>>> = Arc::new(RwLock::new(HashMap::new()));
+    //let index: Arc<RwLock<HashMap<String, HashSet<String>>>> = Arc::new(RwLock::new(HashMap::new()));
+    let index: Arc<RwLock<InvertedIndex>> = Arc::new(RwLock::new(HashMap::new()));
     //let mut queue = vec![start_url];
     //let mut index = HashMap::new();
 
@@ -76,18 +80,11 @@ async fn bfs_crawl(root_domain: &str, limit: u64) {
                 .into_iter().cloned()
                 .collect();
             queue.write().unwrap().append(&mut new_links);
-            /*
-            for l in get_links_with_root(&soup, root_domain).difference(&visited) {
-                queue.write().expect("wtf").push(l.clone());
-            }
-            */
 
             let text = soup.text();
             let word_set = text_to_set(text).await;
-            //dbg!("{:?}", word_set.clone());
-            //dbg!(format!("{} words", word_set.iter().count()));
             dbg!(word_set.iter().count());
-            //index.write().unwrap().insert(blake3::hash(&url.into_bytes()).to_string(), word_set);
+
             index.write().unwrap().insert(url, word_set);
         }
 
