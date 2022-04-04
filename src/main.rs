@@ -1,9 +1,12 @@
-use blake3;
+mod cli;
+
+use structopt::StructOpt;
 use std::sync::{Arc, RwLock};
 use std::collections::{HashSet, HashMap};
-use sublime_fuzzy::FuzzySearch;
+//use sublime_fuzzy::FuzzySearch;
 use serde_json::Value;
 use soup::prelude::*;
+use crate::cli::Opt;
 
 async fn get_json(url: &str) -> reqwest::Result<Value> {
     reqwest::get(url)
@@ -43,7 +46,7 @@ fn get_links_with_root(soup: &Soup, root: &str) -> HashSet<String> {
         .collect()
 }
 
-async fn bfs_crawl(root_domain: &str) {
+async fn bfs_crawl(root_domain: &str, limit: u64) {
     // BFS on the links, each link is an entry into a hashmap
     let start_url = format!("http://www.{root_domain}");
     let mut visited: HashSet<String> = HashSet::new();
@@ -52,7 +55,7 @@ async fn bfs_crawl(root_domain: &str) {
     //let mut queue = vec![start_url];
     //let mut index = HashMap::new();
 
-    let mut count_down = 10;
+    let mut count_down = limit;
 
     let mut last = queue.write().unwrap().pop();
     //while let Some(url) = queue.write().expect("first lock failed").pop() {
@@ -82,10 +85,12 @@ async fn bfs_crawl(root_domain: &str) {
             let text = soup.text();
             let word_set = text_to_set(text).await;
             //dbg!("{:?}", word_set.clone());
-            dbg!("{} words", word_set.iter().count());
+            //dbg!(format!("{} words", word_set.iter().count()));
+            dbg!(word_set.iter().count());
             //index.write().unwrap().insert(blake3::hash(&url.into_bytes()).to_string(), word_set);
             index.write().unwrap().insert(url, word_set);
         }
+
         last = queue.write().unwrap().pop();
     }
 
@@ -96,22 +101,25 @@ async fn bfs_crawl(root_domain: &str) {
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    //let url = "http://www.reddit.com/r/Bitcoin";
-    let url = "reddit.com/r/Bitcoin";
-    bfs_crawl(url).await;
+    let opt = Opt::from_args();
 
-    /*
-    let db: HashMap<String, HashSet<String>> = bincode::deserialize(&std::fs::read("db").unwrap()).unwrap();
-    let keywords = ["bitcoin".to_string()];
-    let mut res_pages = HashSet::new();
-    for (url, page) in db {
-        //let res = FuzzySearch::new("bitcoin bull run"
-        if keywords.iter().fold(true, |acc, k| acc && page.contains(k)) {
-            res_pages.insert(url);
+    if let Some(keywords) = opt.keywords {
+        let db: HashMap<String, HashSet<String>> = bincode::deserialize(&std::fs::read("db").unwrap()).unwrap();
+        let mut res_pages = HashSet::new();
+        for (url, page) in db {
+            //let res = FuzzySearch::new("bitcoin bull run"
+            if keywords.iter().fold(true, |acc, k| acc && page.contains(k)) {
+                res_pages.insert(url);
+            }
+        }
+
+        for page in res_pages {
+            println!("{page}");
         }
     }
-    println!("{res_pages:?}");
-    */
+    else {
+        bfs_crawl(&opt.url_root, opt.limit).await;
+    }
 
     Ok(())
 }
