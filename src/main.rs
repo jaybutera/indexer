@@ -50,7 +50,15 @@ async fn bfs_crawl(root_domain: &str) {
     let mut queue = vec![start_url];
     let mut index = HashMap::new();
 
+    let mut count_down = 10;
+    //let mut index = Arc::new(RwLock::new(HashMap::new()));
+
     while let Some(url) = queue.pop() {
+        count_down -= 1;
+        if count_down == 0 {
+            break;
+        }
+
         dbg!(format!("visiting {url}"));
 
         if let Ok(resp) = get_html(&url).await {
@@ -65,9 +73,12 @@ async fn bfs_crawl(root_domain: &str) {
             let word_set = text_to_set(text).await;
             //dbg!("{:?}", word_set.clone());
             dbg!("{} words", word_set.iter().count());
-            index.insert(blake3::hash(&url.into_bytes()), word_set);
+            index.insert(blake3::hash(&url.into_bytes()).to_string(), word_set);
         }
     }
+
+    //let ser_index = index.into_iter().map(|(k,v)| k.
+    std::fs::write("db", bincode::serialize(&index).unwrap());
 }
 
 
