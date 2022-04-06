@@ -56,7 +56,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     }
     else {
-        bfs_crawl(opt.url_root, opt.limit).await;
+        bfs_crawl(opt.url, opt.limit).await;
     }
 
     Ok(())
