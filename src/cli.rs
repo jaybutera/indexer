@@ -7,7 +7,7 @@ use structopt::StructOpt;
 pub struct Opt {
     /// Search pages for a set of keywords
     #[structopt(short, long)]
-    pub keywords: Option<Vec<String>>,
+    pub query: Option<Vec<String>>,
 
     /// Max number of links to visit during indexing
     #[structopt(short, long, default_value="10")]

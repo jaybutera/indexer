@@ -11,12 +11,12 @@ use std::collections::{HashSet, HashMap};
 use crate::cli::Opt;
 
 
-async fn bfs_crawl(root_domain: &str, limit: u64) {
+async fn bfs_crawl(start_url: String, limit: u64) {
     // BFS on the links, each link is an entry into a hashmap
     let index: Arc<RwLock<ForwardIndex>> = Arc::new(RwLock::new(HashMap::new()));
 
     let inverter_task = invert_index_process(index.clone());
-    let crawler = crawler_process(index, root_domain, limit);
+    let crawler = crawler_process(index, start_url, limit);
 
     tokio::join!(inverter_task, crawler);
 }
@@ -26,7 +26,7 @@ async fn bfs_crawl(root_domain: &str, limit: u64) {
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let opt = Opt::from_args();
 
-    if let Some(keywords) = opt.keywords {
+    if let Some(keywords) = opt.query {
         let pages_db = sled::open("pages_db")?;
         let index_db = sled::open("db")?;
 
@@ -38,7 +38,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             }
         }
 
-        //println!("{l:?}");
         let matches = scoring::fuzzy_phrase(l, pages_db.clone());
 
         if matches.is_empty() {
@@ -57,7 +56,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     }
     else {
-        bfs_crawl(&opt.url_root, opt.limit).await;
+        bfs_crawl(opt.url_root, opt.limit).await;
     }
 
     Ok(())
