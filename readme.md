@@ -1,3 +1,8 @@
+```
+cargo run -- --root_domain stackoverflow.com/questions --limit 100
+cargo run -- --root_domain stackoverflow.com/questions --query rust lifetimes
+```
+
 This is an investigation into the viability of creating high quality
 domain-specific indexes of knowledge bases, such as the web, and search engines
 which can find more meaningful, personal results than, say, Google.
