@@ -13,8 +13,7 @@ pub struct Opt {
     #[structopt(short, long, default_value="10")]
     pub limit: u64,
 
-    /// Root domain (after www) to search. Search will stay within the root.
-    /// For example reddit.com/r/bitcoin
+    /// URL to start crawling from
     #[structopt(short, long)]
-    pub url_root: String,
+    pub url: String,
 }

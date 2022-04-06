@@ -1,6 +1,6 @@
 ```
-cargo run -- --root_domain stackoverflow.com/questions --limit 100
-cargo run -- --root_domain stackoverflow.com/questions --query rust lifetimes
+cargo run -- --url https://stackoverflow.com/questions --limit 100
+cargo run -- --url https://stackoverflow.com/questions --query rust lifetimes
 ```
 
 This is an investigation into the viability of creating high quality
